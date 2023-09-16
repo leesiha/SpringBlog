@@ -28,6 +28,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation ("mysql:mysql-connector-java:8.0.33")
     implementation ("org.springframework.boot:spring-boot-starter-security")
+
+    // Test
+    testImplementation(kotlin("test"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+    implementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
 }
 
 tasks.withType<KotlinCompile> {
@@ -38,6 +43,10 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.withType<Test> {
+    useJUnitPlatform()
+}
+
+tasks.test {
     useJUnitPlatform()
 }
 
