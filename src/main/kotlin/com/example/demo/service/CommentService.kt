@@ -54,7 +54,7 @@ class CommentService(
         return commentRepository.save(comment)
     }
 
-    fun deleteComment(commentId: Long, deleteRequest: DeleteCommentRequest) {
+    fun deleteComment(articleId: Long, commentId: Long, deleteRequest: DeleteCommentRequest) {
         val comment: Comment = commentRepository.findById(commentId).orElseThrow { Exception("Comment with ID $commentId not found") }
 
         val authenticatedUser = userService.authenticate(deleteRequest.email, deleteRequest.password)

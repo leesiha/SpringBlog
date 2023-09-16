@@ -18,16 +18,15 @@ class UserController(
         @RequestBody updateRequest: UpdateUserRequest
     ): ResponseEntity<UpdateUserResponse> {
 
-        // 먼저 사용자 인증
         val user: User = userService.authenticate(updateRequest.email, updateRequest.password)
-            ?: // 인증 실패
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-
         val updatedUser: User = userService.updateUser(userId, updateRequest)
-            ?: // 유저 정보 수정 실패 or 권한 없음
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
         return ResponseEntity.ok(UpdateUserResponse(updatedUser.email, updatedUser.username))
+    }
+
+    @DeleteMapping("/{userId}")
+    fun getUserById(userId: Long): User {
+        return userService.getUserById(userId)
     }
 }
 

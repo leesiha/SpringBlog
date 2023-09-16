@@ -2,12 +2,14 @@ package com.example.demo.service
 
 import com.example.demo.dto.request.SignupRequest
 import com.example.demo.dto.request.UpdateUserRequest
+import com.example.demo.exception.UnauthorizedUserException
+import com.example.demo.exception.UserNotFoundException
 import com.example.demo.model.User
 import com.example.demo.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
-import javax.naming.AuthenticationException
 
 
 @Service
@@ -20,9 +22,9 @@ class UserService(
     }
 
     fun authenticate(email: String, password: String): User {
-        val user = userRepository.findByEmail(email) ?: throw AuthenticationException("Invalid email.")
-        if (!passwordEncoder.matches(password, user.password)) {
-            throw AuthenticationException("Invalid password.")
+        val user = userRepository.findByEmail(email) ?: throw UnauthorizedUserException("Invalid credentials.")
+        if (password.isBlank() || !passwordEncoder.matches(password, user.password)) {
+            throw UnauthorizedUserException("Invalid credentials.")
         }
         return user
     }
@@ -40,8 +42,12 @@ class UserService(
      * @param email The email address to search for.
      * @return The found user or null if no user was found with the given email.
      */
-    fun findByEmail(email: String): User? {
-        return userRepository.findByEmail(email)
+    fun getUserByEmail(email: String): User {
+        return userRepository.findByEmail(email) ?: throw UserNotFoundException("User with email $email not found")
+    }
+    @Transactional
+    fun getUserById(userId: Long): User {
+        return userRepository.findById(userId).orElseThrow { UserNotFoundException("User with ID $userId not found") }
     }
 
 

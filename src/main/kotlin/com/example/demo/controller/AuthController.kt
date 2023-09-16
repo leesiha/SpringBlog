@@ -16,28 +16,19 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/auth")
 class AuthController(
-    private val userService: UserService,
-    private val passwordEncoder: PasswordEncoder
+    private val userService: UserService
 ) {
+
     @PostMapping("/signup")
-    fun signup(@RequestBody signupRequest: SignupRequest): ResponseEntity<Any> {
-        // Check if the email already exists
-        if (userService.isEmailExists(signupRequest.email)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already exists.")
-        }
+    fun signup(@RequestBody signupRequest: SignupRequest): SignupResponse {
+        // Email 중복 체크는 서비스 레이어에서 처리
         val savedUser = userService.createUser(signupRequest)
-        return ResponseEntity.ok(SignupResponse(savedUser.email, savedUser.username))
+        return SignupResponse(savedUser.email, savedUser.username)
     }
 
     @PostMapping("/login")
-    fun login(@RequestBody loginRequest: LoginRequest): ResponseEntity<LoginResponse> {
+    fun login(@RequestBody loginRequest: LoginRequest): LoginResponse {
         val user = userService.authenticate(loginRequest.email, loginRequest.password)
-        return ResponseEntity.ok(LoginResponse(user.email, user.username))
-    }
-
-    @PostMapping("/logout")
-    fun logout() {
-        // Depending on your authentication method, this can invalidate sessions, tokens, etc.
-        // For example, if you're using JWTs, you might maintain a token blacklist.
+        return LoginResponse(user.email, user.username)
     }
 }

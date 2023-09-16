@@ -7,59 +7,59 @@ import com.example.demo.dto.response.CreateArticleResponse
 import com.example.demo.dto.response.UpdateArticleResponse
 import com.example.demo.model.Article
 import com.example.demo.model.User
+import com.example.demo.repository.CommentRepository
 import com.example.demo.service.ArticleService
 import com.example.demo.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/articles")
-class ArticleController(private val articleService: ArticleService, private  val userService: UserService) {
+class ArticleController(
+    private val articleService: ArticleService,
+    private val commentRepository: CommentRepository
+) {
 
     @PostMapping
-    fun createArticle(@RequestBody request: CreateArticleRequest): ResponseEntity<CreateArticleResponse> {
+    fun createArticle(@RequestBody request: CreateArticleRequest): CreateArticleResponse {
         val article = articleService.createArticle(request)
-        return ResponseEntity.ok(CreateArticleResponse(article.id, article.user.email, article.title, article.content))
+        return CreateArticleResponse(article.id, article.user.email, article.title, article.content)
+    }
+
+    /*
+     * 응답의 복잡성을 축소시키기 위해 단순히 객체만을 반환하도록 했습니다.
+     * 추가적인 메타데이터나 다른 정보를 포함해야 하는 경우, 별도의 응답 클래스를 만드는 것이 좋습니다.
+     */
+    @GetMapping("/{articleId}")
+    fun readArticle(@PathVariable articleId: Long): Article {
+        return articleService.findArticleById(articleId)
+    }
+    @GetMapping("/user/{email}")
+    fun readSpecificArticles(@PathVariable email: String): List<Article> {
+        return articleService.findArticlesByEmail(email)
+    }
+    @GetMapping
+    fun readAllArticles(): List<Article> {
+        return articleService.findAllArticles()
     }
 
     @PutMapping("/{articleId}")
     fun updateArticle(
         @PathVariable articleId: Long,
         @RequestBody updateRequest: UpdateArticleRequest
-    ): ResponseEntity<UpdateArticleResponse> {
-
-        // 먼저 사용자 인증
-        val user: User = userService.authenticate(updateRequest.email, updateRequest.password)
-            ?: // 인증 실패
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-
+    ): UpdateArticleResponse {
         val updatedArticle: Article = articleService.updateArticle(articleId, updateRequest)
-            ?: // 게시글 수정 실패 or 권한 없음
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
-
-        return ResponseEntity.ok(UpdateArticleResponse(articleId, user.email, updatedArticle.title, updatedArticle.content))
+        return UpdateArticleResponse(articleId, updatedArticle.user.email, updatedArticle.title, updatedArticle.content)
     }
 
     @DeleteMapping("/{articleId}")
     fun deleteArticle(
         @PathVariable articleId: Long,
         @RequestBody deleteRequest: DeleteArticleRequest
-    ): ResponseEntity<Any> {
-
-        // 먼저 사용자 인증
-        try {
-            articleService.deleteArticle(articleId, deleteRequest)
-        } catch (ex: Exception) {
-            // 예외 처리에 따라 적절한 응답 코드 및 메시지 반환
-//            return when(ex) {
-//                is ArticleNotFoundException -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.message)
-//                is UnauthorizedUserException -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.message)
-//                else -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting the article.")
-//            }
-        }
-
-        // 삭제 성공에 대한 응답 반환 (200 OK)
-        return ResponseEntity.ok("Article deleted successfully!")
+    ): ResponseEntity<Unit> {
+        articleService.deleteArticle(articleId, deleteRequest)
+        return ResponseEntity.ok().build()
     }
 }

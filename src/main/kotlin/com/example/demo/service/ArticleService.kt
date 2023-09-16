@@ -3,6 +3,8 @@ package com.example.demo.service
 import com.example.demo.dto.request.CreateArticleRequest
 import com.example.demo.dto.request.DeleteArticleRequest
 import com.example.demo.dto.request.UpdateArticleRequest
+import com.example.demo.exception.ArticleNotFoundException
+import com.example.demo.exception.UnauthorizedUserException
 import com.example.demo.model.Article
 import com.example.demo.model.User
 import com.example.demo.repository.ArticleRepository
@@ -12,10 +14,9 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 @Service
-@Transactional
 class ArticleService(
-    private val commentRepository: CommentRepository,
     private val articleRepository: ArticleRepository,
+    private val commentRepository: CommentRepository,
     private val userService: UserService
 ) {
     fun findAllArticles(): List<Article> {
@@ -23,16 +24,15 @@ class ArticleService(
     }
 
     fun findArticlesByEmail(email: String): List<Article> {
-        val user = userService.findByEmail(email)
-            ?: throw IllegalArgumentException("No user found with email: $email")
-
+        val user: User = userService.getUserByEmail(email)
         user.id.let {
             return articleRepository.findByUserId(it)
         }
     }
 
-    fun findArticleById(articleId: Long): Article? {
-        return articleRepository.findById(articleId).orElse(null)
+    fun findArticleById(articleId: Long): Article {
+        return articleRepository.findById(articleId)
+            .orElseThrow { ArticleNotFoundException("Article with ID $articleId not found") }
     }
 
     fun createArticle(createRequest: CreateArticleRequest): Article {
@@ -49,20 +49,23 @@ class ArticleService(
     }
 
     fun updateArticle(articleId: Long, updateRequest: UpdateArticleRequest): Article {
-        val article: Article = articleRepository.findById(articleId).orElseThrow { Exception("Article not found") }
+        val article: Article = articleRepository.findById(articleId)
+            .orElseThrow { ArticleNotFoundException("Article with ID $articleId not found") }
         article.title = updateRequest.title
         article.content = updateRequest.content
         article.updatedAt = Instant.now()
         return articleRepository.save(article)
     }
 
+    @Transactional
     fun deleteArticle(articleId: Long, deleteRequest: DeleteArticleRequest) {
-        val article: Article = articleRepository.findById(articleId).orElseThrow { Exception("Article with ID $articleId not found") }
+        val article: Article = articleRepository.findById(articleId)
+            .orElseThrow { ArticleNotFoundException("Article with ID $articleId not found") }
 
         val authenticatedUser = userService.authenticate(deleteRequest.email, deleteRequest.password)
 
         if (article.user.email != authenticatedUser.email) {
-            throw Exception("Only the author can delete the article")
+            throw UnauthorizedUserException("Only the author can delete the article")
         }
 
         commentRepository.deleteByArticleId(articleId)
