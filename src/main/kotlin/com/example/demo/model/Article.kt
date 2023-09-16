@@ -27,7 +27,7 @@ class Article {
     @Column(name = "title", nullable = false)
     lateinit var title: String
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     lateinit var user: User
 }

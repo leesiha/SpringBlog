@@ -25,11 +25,11 @@ class Comment {
     @Column(name = "content", nullable = false)
     lateinit var content: String
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     lateinit var user: User
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "article_id", nullable = false)
     lateinit var article: Article
 }
