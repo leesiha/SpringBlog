@@ -1,6 +1,7 @@
 package com.example.demo.exception
 
 import com.example.demo.dto.response.ErrorResponse
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -25,6 +26,11 @@ class GlobalExceptionHandler {
             ErrorResponse(LocalDateTime.now(), HttpStatus.UNAUTHORIZED, ex.message ?: "", request.getDescription(false)),
             HttpStatus.UNAUTHORIZED
         )
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException::class)
+    fun handleEmailAlreadyExistsException(ex: EmailAlreadyExistsException, request: WebRequest): ResponseEntity<Any> {
+        return ResponseEntity<Any>(ex.message, HttpHeaders(), HttpStatus.CONFLICT)
     }
 
     @ExceptionHandler(Exception::class)

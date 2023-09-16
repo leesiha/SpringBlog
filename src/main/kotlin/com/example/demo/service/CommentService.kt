@@ -13,15 +13,16 @@ import java.time.Instant
 @Service
 class CommentService(
     private val commentRepository: CommentRepository,
-    private val userService: UserService,
     private val articleService: ArticleService
 ) {
     fun findCommentsByArticleId(articleId: Long): List<Comment> {
         return commentRepository.findByArticleId(articleId)
     }
+    fun findCommentsByEmail(email: String): List<Comment> {
+        return commentRepository.findByUserEmail(email)
+    }
 
-    fun createComment(articleId: Long, createRequest: CreateCommentRequest): Comment {
-        val user: User = userService.authenticate(createRequest.email, createRequest.password)
+    fun createComment(articleId: Long, user:User, createRequest: CreateCommentRequest): Comment {
         val article: Article = articleService.findArticleById(articleId)!!
 
         val comment = Comment().apply {
@@ -54,11 +55,8 @@ class CommentService(
         return commentRepository.save(comment)
     }
 
-    fun deleteComment(articleId: Long, commentId: Long, deleteRequest: DeleteCommentRequest) {
+    fun deleteComment(articleId: Long, commentId: Long, authenticatedUser:User, deleteRequest: DeleteCommentRequest) {
         val comment: Comment = commentRepository.findById(commentId).orElseThrow { Exception("Comment with ID $commentId not found") }
-
-        val authenticatedUser = userService.authenticate(deleteRequest.email, deleteRequest.password)
-
         if (comment.user.email != authenticatedUser.email) {
             throw Exception("Only the author can delete the comment")
         }

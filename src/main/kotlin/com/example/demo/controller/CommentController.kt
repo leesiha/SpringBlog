@@ -27,7 +27,7 @@ class CommentController(
     ): ResponseEntity<CreateCommentResponse> {
 
         val user: User = userService.authenticate(createRequest.email, createRequest.password)
-        val createdComment: Comment = commentService.createComment(articleId, createRequest)
+        val createdComment: Comment = commentService.createComment(articleId, user, createRequest)
 
         return ResponseEntity.ok(CreateCommentResponse(createdComment.id, createdComment.user.email, createdComment.content))
     }
@@ -58,7 +58,7 @@ class CommentController(
     ): ResponseEntity<Unit> {
 
         val user: User = userService.authenticate(deleteRequest.email, deleteRequest.password)
-        commentService.deleteComment(articleId, commentId, deleteRequest)
+        commentService.deleteComment(articleId, commentId, user, deleteRequest)
 
         return ResponseEntity(HttpStatus.NO_CONTENT)
     }

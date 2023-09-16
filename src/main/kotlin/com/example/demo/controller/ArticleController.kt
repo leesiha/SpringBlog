@@ -19,12 +19,13 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/articles")
 class ArticleController(
     private val articleService: ArticleService,
-    private val commentRepository: CommentRepository
+    private val userService: UserService
 ) {
 
     @PostMapping
-    fun createArticle(@RequestBody request: CreateArticleRequest): CreateArticleResponse {
-        val article = articleService.createArticle(request)
+    fun createArticle(@RequestBody createRequest: CreateArticleRequest): CreateArticleResponse {
+        val user: User = userService.authenticate(createRequest.email, createRequest.password)
+        val article = articleService.createArticle(user, createRequest)
         return CreateArticleResponse(article.id, article.user.email, article.title, article.content)
     }
 
@@ -59,7 +60,8 @@ class ArticleController(
         @PathVariable articleId: Long,
         @RequestBody deleteRequest: DeleteArticleRequest
     ): ResponseEntity<Unit> {
-        articleService.deleteArticle(articleId, deleteRequest)
+        val user: User = userService.authenticate(deleteRequest.email, deleteRequest.password)
+        articleService.deleteArticle(articleId, user, deleteRequest)
         return ResponseEntity.ok().build()
     }
 }

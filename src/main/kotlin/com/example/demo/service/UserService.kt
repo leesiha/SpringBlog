@@ -1,7 +1,6 @@
 package com.example.demo.service
 
-import com.example.demo.dto.request.SignupRequest
-import com.example.demo.dto.request.UpdateUserRequest
+import com.example.demo.dto.request.*
 import com.example.demo.exception.UnauthorizedUserException
 import com.example.demo.exception.UserNotFoundException
 import com.example.demo.model.User
@@ -14,8 +13,10 @@ import java.time.Instant
 
 @Service
 class UserService(
+    private val passwordEncoder: PasswordEncoder,
     private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder
+    private val articleService: ArticleService,
+    private val commentService: CommentService
 ) {
     private fun encryptPassword(password: String): String {
         return passwordEncoder.encode(password)
@@ -71,5 +72,24 @@ class UserService(
         user.updatedAt = Instant.now()
         return userRepository.save(user)
     }
+
+    fun deleteUser(request: LoginRequest) {
+        val user = authenticate(request.email, request.password)
+
+        // 해당 사용자가 작성한 댓글들을 모두 찾아서 삭제
+        val comments = commentService.findCommentsByEmail(user.email)
+        for (comment in comments) {
+            commentService.deleteComment(comment.article.id, comment.id, user, DeleteCommentRequest(request.email, request.password))
+        }
+        // 해당 사용자가 작성한 게시글들을 모두 찾아서 삭제
+        val articles = articleService.findArticlesByEmail(user.email)
+        for (article in articles) {
+            articleService.deleteArticle(article.id, user, DeleteArticleRequest(request.email, request.password))
+        }
+
+        // 사용자 삭제
+        userRepository.deleteById(user.id)
+    }
+
 }
 

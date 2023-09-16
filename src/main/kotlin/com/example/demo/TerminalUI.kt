@@ -5,14 +5,10 @@ import com.example.demo.controller.CommentController
 import com.example.demo.controller.UserController
 import com.example.demo.dto.request.*
 import com.example.demo.dto.response.LoginResponse
+import com.example.demo.exception.EmailAlreadyExistsException
 import com.example.demo.exception.UnauthorizedUserException
 import com.example.demo.model.Article
-import com.example.demo.service.ArticleService
-import com.example.demo.service.CommentService
-import com.example.demo.service.UserService
-import org.springframework.http.HttpStatus
 import java.util.*
-import javax.naming.AuthenticationException
 import kotlin.system.exitProcess
 
 class TerminalUI(
@@ -62,15 +58,42 @@ class TerminalUI(
             println(e.message)
         }
     }
-
-
     private fun signup() {
         print("Enter email: ")
         val email = scanner.nextLine().trim()
         print("Enter password: ")
         val password = scanner.nextLine().trim()
 
-        authController.signup(SignupRequest(email, password, email))
+        if (email.isBlank() || password.isBlank()) {
+            println("Email and password should not be empty!")
+            return
+        }
+
+        try {
+            authController.signup(SignupRequest(email, password, email))
+        } catch (e: EmailAlreadyExistsException) {
+            println("The email is already registered. Please use another email.")
+        }
+    }
+
+    private fun deleteAccount() {
+        print("정말로 계정을 삭제하시겠습니까? (yes/no) >> ")
+        val choice = scanner.nextLine()
+        if (choice == "yes") {
+            // 토큰 발급 대신 비밀번호 재입력 방식으로 보안 유지
+            print("Enter password for verification:")
+            val password = scanner.nextLine().trim()
+
+            // Check if the password matches with the loggedInUser's password
+            if (!verifyUserLogin(loggedInUser!!.email, password)) {
+                return
+            }
+            authController.deleteUser(LoginRequest(loggedInUser!!.email, password))
+            println("계정이 성공적으로 삭제되었습니다.")
+            loggedInUser = null  // 로그아웃
+        } else {
+            println("계정 삭제가 취소되었습니다.")
+        }
     }
 
     private fun printMenuBeforeLogin() {
@@ -107,23 +130,19 @@ class TerminalUI(
         │  [1] see all articles   │
         │  [2] go to your blog    │
         │  [3] logout             │
-        │  [4] exit program       │
+        │  [4] delete account     │
         │                         │
         ╰─────────────────────────╯
         [ENTER] >> """)
 
-        when (scanner.nextLine().trim()) {
+        when (scanner.nextLine()) {
             "1" -> displayAllArticles()
             "2" -> printMyPage()
             "3" -> {
                 println("Logged out successfully!")
                 loggedInUser = null
             }
-            "4" -> {
-                println("Goodbye!")
-                exitProcess(0)
-            }
-            else -> println("Invalid choice. Please try again.")
+            "4" -> deleteAccount()  // 회원탈퇴 로직 호출
         }
     }
     private fun printMyPage() {
@@ -241,20 +260,20 @@ class TerminalUI(
         actionsList.add("[0] Go Back")
 
         // Display the options in one line
-            println("Actions: ${actionsList.joinToString(" | ")}")
-            print(">> ")
-            val actionChoice = readLine()?.toIntOrNull()
+        println("Actions: ${actionsList.joinToString(" | ")}")
+        print(">> ")
+        val actionChoice = readLine()?.toIntOrNull()
 
-            if (actionChoice == 0) {
-                println("Returning to the previous menu...")
-            }
-            else if (!isUserArticleAuthor && (actionChoice == 3 || actionChoice == 4)) {
-                println("Invalid choice!")
-            }
-            else if (actionChoice == null || actionChoice !in 1..4) {
-                println("Invalid choice!")
-            }
-            else handleUserAction(actionChoice, article)
+        if (actionChoice == 0) {
+            println("Returning to the previous menu...")
+        }
+        else if (!isUserArticleAuthor && (actionChoice == 3 || actionChoice == 4)) {
+            println("Invalid choice!")
+        }
+        else if (actionChoice == null || actionChoice !in 1..4) {
+            println("Invalid choice!")
+        }
+        else handleUserAction(actionChoice, article)
     }
     private fun handleUserAction(actionChoice: Int?, article: Article) {
         when(actionChoice) {
@@ -280,8 +299,8 @@ class TerminalUI(
 
         // Check if the password matches with the loggedInUser's password
         if (!verifyUserLogin(loggedInUser!!.email, password)) {
-    return
-}
+            return
+        }
 
         // 제목 입력
         print("Enter article title: ")
@@ -334,8 +353,8 @@ class TerminalUI(
 
         // Check if the password matches with the loggedInUser's password
         if (!verifyUserLogin(loggedInUser!!.email, password)) {
-    return
-}
+            return
+        }
 
         // 제목 입력
         print("Enter new article title (or press enter to keep the current): ")
@@ -390,8 +409,8 @@ class TerminalUI(
 
         // Check if the password matches with the loggedInUser's password
         if (!verifyUserLogin(loggedInUser!!.email, password)) {
-    return
-}
+            return
+        }
 
         // DeleteArticleRequest DTO 생성 (이 경우 비밀번호가 필요한지는 구체적인 요구사항에 따라 다를 수 있습니다.)
         val deleteRequest = DeleteArticleRequest(loggedInUser!!.email, password)
@@ -414,8 +433,8 @@ class TerminalUI(
 
         // Check if the password matches with the loggedInUser's password
         if (!verifyUserLogin(loggedInUser!!.email, password)) {
-    return
-}
+            return
+        }
 
         // 제목 입력
         print("Write your comment: ")
@@ -444,8 +463,8 @@ class TerminalUI(
 
         // Check if the password matches with the loggedInUser's password
         if (!verifyUserLogin(loggedInUser!!.email, password)) {
-    return
-}
+            return
+        }
 
         // 새로운 댓글 내용 입력
         print("Enter new comment content: ")
@@ -476,8 +495,8 @@ class TerminalUI(
 
         // Check if the password matches with the loggedInUser's password
         if (!verifyUserLogin(loggedInUser!!.email, password)) {
-    return
-}
+            return
+        }
 
         // DeleteCommentRequest DTO 생성 (이 경우 비밀번호가 필요한지는 구체적인 요구사항에 따라 다를 수 있습니다.)
         val deleteRequest = DeleteCommentRequest(loggedInUser!!.email, password)
@@ -508,8 +527,4 @@ class TerminalUI(
             false
         }
     }
-
-
-
-
 }

@@ -8,10 +8,7 @@ import com.example.demo.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/auth")
@@ -30,5 +27,12 @@ class AuthController(
     fun login(@RequestBody loginRequest: LoginRequest): LoginResponse {
         val user = userService.authenticate(loginRequest.email, loginRequest.password)
         return LoginResponse(user.email, user.username)
+    }
+
+    @DeleteMapping()
+    fun deleteUser(@PathVariable request: LoginRequest): ResponseEntity<Void> {
+        userService.deleteUser(request)
+
+        return ResponseEntity.status(HttpStatus.OK).build()
     }
 }
