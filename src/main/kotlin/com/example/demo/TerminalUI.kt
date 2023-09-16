@@ -44,7 +44,12 @@ class TerminalUI(
         print("Enter password: ")
         val password = scanner.nextLine()
 
-        if (email.isBlank() || password.isBlank()) {
+        // validate
+        if (!email.contains("@") && !email.contains(".")) {
+            println("Please enter a valid email address.")
+            return
+        }
+        else if (email.isBlank() || password.isBlank()) {
             println("Email and password should not be empty!")
             return
         }
@@ -61,10 +66,16 @@ class TerminalUI(
     private fun signup() {
         print("Enter email: ")
         val email = scanner.nextLine().trim()
+
         print("Enter password: ")
         val password = scanner.nextLine().trim()
 
-        if (email.isBlank() || password.isBlank()) {
+        // validate
+        if (!email.contains("@") && !email.contains(".")) {
+            println("Please enter a valid email address.")
+            return
+        }
+        else if (email.isBlank() || password.isBlank()) {
             println("Email and password should not be empty!")
             return
         }
