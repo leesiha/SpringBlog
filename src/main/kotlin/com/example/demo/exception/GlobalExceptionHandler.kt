@@ -13,31 +13,27 @@ import java.time.LocalDateTime
 class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException::class)
-    fun handleResourceNotFoundException(ex: ResourceNotFoundException, request: WebRequest): ResponseEntity<ErrorResponse> {
-        return ResponseEntity(
-            ErrorResponse(LocalDateTime.now(), HttpStatus.NOT_FOUND, ex.message ?: "", request.getDescription(false)),
-            HttpStatus.NOT_FOUND
-        )
+    fun handleResourceNotFoundException(ex: ResourceNotFoundException, request: WebRequest): ErrorResponse {
+        return ErrorResponse(LocalDateTime.now(), HttpStatus.NOT_FOUND, ex.message ?: "", request.getDescription(false))
     }
 
     @ExceptionHandler(UnauthorizedUserException::class)
-    fun handleUnauthorizedUserException(ex: UnauthorizedUserException, request: WebRequest): ResponseEntity<ErrorResponse> {
-        return ResponseEntity(
-            ErrorResponse(LocalDateTime.now(), HttpStatus.UNAUTHORIZED, ex.message ?: "", request.getDescription(false)),
-            HttpStatus.UNAUTHORIZED
-        )
+    fun handleUnauthorizedUserException(ex: UnauthorizedUserException, request: WebRequest): ErrorResponse {
+        return ErrorResponse(LocalDateTime.now(), HttpStatus.UNAUTHORIZED, ex.message ?: "", request.getDescription(false))
     }
 
     @ExceptionHandler(EmailAlreadyExistsException::class)
-    fun handleEmailAlreadyExistsException(ex: EmailAlreadyExistsException, request: WebRequest): ResponseEntity<Any> {
-        return ResponseEntity<Any>(ex.message, HttpHeaders(), HttpStatus.CONFLICT)
+    fun handleEmailAlreadyExistsException(ex: EmailAlreadyExistsException, request: WebRequest): ErrorResponse {
+        return ErrorResponse(LocalDateTime.now(), HttpStatus.CONFLICT, ex.message ?: "", request.getDescription(false))
+    }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(ex: IllegalArgumentException, request: WebRequest): ErrorResponse {
+        return ErrorResponse(LocalDateTime.now(), HttpStatus.BAD_REQUEST, ex.message ?: "", request.getDescription(false))
     }
 
     @ExceptionHandler(Exception::class)
-    fun handleGenericException(ex: Exception, request: WebRequest): ResponseEntity<ErrorResponse> {
-        return ResponseEntity(
-            ErrorResponse(LocalDateTime.now(), HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred.", request.getDescription(false)),
-            HttpStatus.INTERNAL_SERVER_ERROR
-        )
+    fun handleGenericException(ex: Exception, request: WebRequest): ErrorResponse {
+        return ErrorResponse(LocalDateTime.now(), HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred", request.getDescription(false))
     }
 }

@@ -5,6 +5,7 @@ import com.example.demo.exception.UnauthorizedUserException
 import com.example.demo.exception.UserNotFoundException
 import com.example.demo.model.User
 import com.example.demo.repository.UserRepository
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -13,11 +14,11 @@ import java.time.Instant
 
 @Service
 class UserService(
-    private val passwordEncoder: PasswordEncoder,
     private val userRepository: UserRepository,
     private val articleService: ArticleService,
     private val commentService: CommentService
 ) {
+    private val passwordEncoder: BCryptPasswordEncoder = BCryptPasswordEncoder()
     private fun encryptPassword(password: String): String {
         return passwordEncoder.encode(password)
     }
@@ -55,7 +56,11 @@ class UserService(
     /**
      * Create a new user based on the SignupRequest and save it to the database.
      */
-    fun createUser(signupRequest: SignupRequest): User {
+    fun createUser(signupRequest: SignupRequest?): User {
+        if (signupRequest == null) {
+            throw IllegalArgumentException("SignupRequest must not be null", signupRequest)
+        }
+
         val newUser = User().apply {
             createdAt = Instant.now()
             updatedAt = Instant.now()

@@ -15,27 +15,32 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import java.time.Instant
 import com.nhaarman.mockitokotlin2.whenever
 import org.mockito.ArgumentMatchers.any
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import java.util.*
 
 class UserServiceTest {
 
     private lateinit var userService: UserService
 
-    private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var userRepository: UserRepository
     private lateinit var articleService: ArticleService
     private lateinit var commentService: CommentService
+    private val passwordEncoder: BCryptPasswordEncoder = BCryptPasswordEncoder()
+
 
     @BeforeEach
     fun setUp() {
-        passwordEncoder = Mockito.mock(PasswordEncoder::class.java)
         userRepository = Mockito.mock(UserRepository::class.java)
         articleService = Mockito.mock(ArticleService::class.java)
         commentService = Mockito.mock(CommentService::class.java)
-        userService = UserService(passwordEncoder, userRepository, articleService, commentService)
+        userService = UserService(userRepository, articleService, commentService)
     }
 
-    private fun User(email:String, pw:String): User {
+    private fun encryptPassword(password: String): String {
+        return passwordEncoder.encode(password)
+    }
+
+    private fun initUser(email:String, pw:String): User {
         return User().apply {
             this.email=email
             password=pw
@@ -49,7 +54,7 @@ class UserServiceTest {
     @Test
     fun `should authenticate valid user`() {
         // Setup mock behavior for valid user
-        val validUser = User("test@example.com", "encryptedPassword")
+        val validUser = initUser("test@example.com", "encryptedPassword")
 
         whenever(userRepository.findByEmail("test@example.com")).thenReturn(validUser)
         whenever(passwordEncoder.matches("password", "encryptedPassword")).thenReturn(true)
@@ -77,7 +82,7 @@ class UserServiceTest {
     @Test
     fun `should return true when email exists`() {
         // Setup mock behavior for existing email
-        val existingUser = User("existing@example.com", "someEncryptedPassword")
+        val existingUser = initUser("existing@example.com", "someEncryptedPassword")
         `when`(userRepository.findByEmail("existing@example.com")).thenReturn(existingUser)
 
         // Testing if email exists
@@ -100,7 +105,7 @@ class UserServiceTest {
     @Test
     fun `should return user when email exists`() {
         // Setup mock behavior for existing email
-        val existingUser = User("existing@example.com", "someEncryptedPassword")
+        val existingUser = initUser("existing@example.com", "someEncryptedPassword")
         `when`(userRepository.findByEmail("existing@example.com")).thenReturn(existingUser)
 
         // Testing fetching user by existing email
@@ -125,7 +130,7 @@ class UserServiceTest {
     @Test
     fun `should return user when user ID exists`() {
         // Setup mock behavior for existing user ID
-        val existingUser = User("user@example.com", "someEncryptedPassword")
+        val existingUser = initUser("user@example.com", "someEncryptedPassword")
         `when`(userRepository.findById(existingUser.id)).thenReturn(Optional.of(existingUser))
 
         // Testing fetching user by existing user ID
@@ -151,21 +156,29 @@ class UserServiceTest {
     // test createUser
     @Test
     fun `should create user with valid signup request`() {
-        // Prepare the SignupRequest data
-        val signupRequest = SignupRequest("test@example.com", "testPassword", "test@example.com")
+        // Arrange
+        val email = "test@example.com"
+        val password = "testPassword"
+        val signupRequest = SignupRequest(email, password, email)
 
-        // Mock the repository save function to return the user it's given
-        `when`(userRepository.save(any(User::class.java))).thenAnswer { it.arguments[0] }
+        val savedUser = initUser(email, password) // Modify this as per your User's actual structure
+        Mockito.`when`(userRepository.save(Mockito.any(User::class.java))).thenReturn(savedUser)
 
-        // Call the createUser function
-        val createdUser = userService.createUser(signupRequest)
+        // Act
+        val result = userService.createUser(signupRequest)
 
-        // Assertions to validate the created user
-        assertEquals(signupRequest.email, createdUser.email)
-        assertEquals(passwordEncoder.encode(signupRequest.password), createdUser.password)  // Assuming encryptPassword is accessible
-        assertNotNull(createdUser.createdAt)
-        assertNotNull(createdUser.updatedAt)
-        assertEquals(signupRequest.email, createdUser.username)
+        // Assert
+        assertEquals(email, result.email)
+        assertNotNull(result.createdAt)
+        assertNotNull(result.updatedAt)
+    }
+
+    @Test
+    fun `should throw IllegalArgumentException for null signup request`() {
+        // Arrange & Act & Assert
+        assertThrows<IllegalArgumentException> {
+            userService.createUser(null)
+        }
     }
 
 
